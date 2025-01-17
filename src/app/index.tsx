@@ -1,7 +1,9 @@
 import { Stack, Link } from 'expo-router';
+import { useState } from 'react';
 import { View, Text, TextInput, ScrollView, Pressable } from 'react-native';
 
 import { Container } from '~/components/Container';
+import { supabase } from '~/lib/supabase';
 
 const POPULAR_CHANNELS = [
   { name: 'MKBHD', url: 'https://youtube.com/@mkbhd' },
@@ -11,6 +13,16 @@ const POPULAR_CHANNELS = [
 ];
 
 export default function Home() {
+  const [url, setUrl] = useState('');
+
+  const startAnalyzing = async () => {
+    const { error, data } = await supabase.functions.invoke('trigger_collection_api', {
+      body: { url },
+    });
+    console.log('error: ', error);
+    console.log('data: ', data);
+  };
+
   return (
     <>
       <Stack.Screen options={{ title: 'YouTube Analyzer' }} />
@@ -22,26 +34,27 @@ export default function Home() {
             <Text className="mb-8 text-center text-gray-600">
               Discover insights about any YouTube channel
             </Text>
-
             {/* Search Input */}
             <View className="px-4">
               <View className="flex-row items-center space-x-2 rounded-2xl bg-gray-100 p-2 shadow-sm">
                 <TextInput
+                  value={url}
+                  onChangeText={setUrl}
                   placeholder="Paste YouTube channel URL"
                   placeholderTextColor="#6B7280"
                   className="h-12 flex-1 px-4 text-lg text-gray-900"
                 />
-                <Link href="/channel" asChild>
-                  <Pressable className="h-12 items-center justify-center rounded-xl bg-red-600 px-8">
-                    <Text className="text-lg font-semibold text-white">Analyze</Text>
-                  </Pressable>
-                </Link>
+
+                <Pressable
+                  onPress={startAnalyzing}
+                  className="h-12 items-center justify-center rounded-xl bg-red-600 px-8">
+                  <Text className="text-lg font-semibold text-white">Analyze</Text>
+                </Pressable>
               </View>
               <Text className="mt-2 text-center text-sm text-gray-500">
                 Example: https://youtube.com/@mkbhd
               </Text>
             </View>
-
             {/* Popular Channels */}
             <View className="mt-12">
               <Text className="mb-4 px-4 text-lg font-semibold">Popular Channels</Text>
@@ -55,7 +68,6 @@ export default function Home() {
                 ))}
               </View>
             </View>
-
             {/* Recent Searches */}
             <View className="mt-12">
               <Text className="mb-4 px-4 text-lg font-semibold">Recent Searches</Text>
