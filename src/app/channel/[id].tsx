@@ -1,40 +1,38 @@
-import { View, Text, Image } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
+import { useLocalSearchParams } from 'expo-router';
+import { View, Text, Image, ScrollView } from 'react-native';
+import { supabase } from '~/lib/supabase';
 
-const channel = {
-  input: {
-    url: 'https://www.youtube.com/@jaidenanimations/about',
-  },
-  url: 'https://www.youtube.com/@jaidenanimations/about',
-  handle: '@jaidenanimations',
-  handle_md5: '4e2083f32de8c4dca0e500600bd36486',
-  banner_img:
-    'https://yt3.googleusercontent.com/-MdSCWVLkfJpq2I461HndvpVObRlxKAxx5_zDdI7Ob5gJfEA_sAEpeZ7QDaHplClYi_bDbXi=w2560-fcrop64=1,00005a57ffffa5a8-k-c0xffffffff-no-nd-rj',
-  profile_image:
-    'https://yt3.googleusercontent.com/gopbHeiDtEB932rIFqLlR4D_hFtd-BcdGrQgGeyDpkD3guskkbT74DsJYPGo3x7MqkyqtgL-=s160-c-k-c0x00ffffff-no-rj',
-  name: 'JaidenAnimations',
-  subscribers: 14200000,
-  Description:
-    "hi it's jaiden and bird\n\nchannel profile picture made by: me\nchannel banner art made by: https://twitter.com/motiCHIKUBI\n",
-  videos_count: 158,
-  created_date: '2014-02-16T00:00:00.000Z',
-  views: 2756154727,
-  Details: {
-    location: 'United States',
-  },
-  Links: [
-    'twitch.tv/jaidenanimations',
-    'twitter.com/JaidenAnimation',
-    'instagram.com/jaiden_animations',
-    'jaidenanimations.com',
-  ],
-  identifier: 'UCGwu0nbY2wSkW8N-cghnLpA',
-  id: 'UCGwu0nbY2wSkW8N-cghnLpA',
-  timestamp: '2025-01-17T14:35:58.484Z',
+const fetchChannel = async (id: string) => {
+  const { data, error } = await supabase.from('yt_channels').select('*').eq('id', id).single();
+  if (error) {
+    throw error;
+  }
+  return data;
 };
 
 export default function Channel() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+
+  const {
+    data: channel,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['channel', id],
+    queryFn: () => fetchChannel(id),
+  });
+
+  if (isLoading) {
+    return <Text>Loading...</Text>;
+  }
+
+  if (error) {
+    return <Text>Error: {error.message}</Text>;
+  }
+
   return (
-    <View className="flex-1">
+    <ScrollView className="flex-1">
       {/* Banner Image */}
       <Image source={{ uri: channel.banner_img }} className="h-40 w-full object-cover" />
 
@@ -70,21 +68,11 @@ export default function Channel() {
             <Text className="text-gray-600">Joined</Text>
           </View>
           <View className="items-center">
-            <Text className="text-xl font-bold">{channel.Details.location}</Text>
+            <Text className="text-xl font-bold">{channel.location}</Text>
             <Text className="text-gray-600">Location</Text>
           </View>
         </View>
-
-        {/* Links */}
-        <View className="mt-6">
-          <Text className="mb-2 font-bold">Links</Text>
-          {channel.Links.map((link, index) => (
-            <Text key={index} className="mb-1 text-blue-600">
-              {link}
-            </Text>
-          ))}
-        </View>
       </View>
-    </View>
+    </ScrollView>
   );
 }

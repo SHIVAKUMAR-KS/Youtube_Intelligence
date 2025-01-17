@@ -19,13 +19,7 @@ Deno.serve(async (req) => {
   );
 
   if (!response.ok) {
-    console.log("response: ", response);
-    return new Response(
-      JSON.stringify({ error: "Failed to trigger collection" }),
-      {
-        headers: { "Content-Type": "application/json" },
-      },
-    );
+    throw new Error("Failed to trigger collection");
   }
 
   const data = await response.json();
@@ -39,14 +33,12 @@ Deno.serve(async (req) => {
     },
   );
 
-  const result = await supabase.from("scrape_jobs").insert({
+  const { data: scrapeJob } = await supabase.from("scrape_jobs").insert({
     id: data.snapshot_id,
     status: "running",
-  });
+  }).select().single();
 
-  console.log("result: ", result);
-
-  return new Response(JSON.stringify(data), {
+  return new Response(JSON.stringify(scrapeJob), {
     headers: { "Content-Type": "application/json" },
   });
 });

@@ -18,10 +18,11 @@ Deno.serve(async (req) => {
   );
 
   // save channel to database
-  const { error } = await supabase.from("yt_channels").insert(
+  const { error } = await supabase.from("yt_channels").upsert(
     data.map((item: any) => ({
       id: item.id,
-      url: item.url,
+      updated_at: new Date().toISOString(),
+      url: item.url.replace("/about", ""),
       handle: item.handle,
       banner_img: item.banner_img,
       profile_image: item.profile_image,

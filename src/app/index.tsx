@@ -1,26 +1,64 @@
-import { Stack, Link } from 'expo-router';
+import { useQuery } from '@tanstack/react-query';
+import { Stack, Link, router } from 'expo-router';
 import { useState } from 'react';
-import { View, Text, TextInput, ScrollView, Pressable } from 'react-native';
+import { View, Text, TextInput, ScrollView, Pressable, Alert, Image } from 'react-native';
 
 import { Container } from '~/components/Container';
 import { supabase } from '~/lib/supabase';
 
 const POPULAR_CHANNELS = [
-  { name: 'MKBHD', url: 'https://youtube.com/@mkbhd' },
-  { name: 'Veritasium', url: 'https://youtube.com/@veritasium' },
-  { name: 'Fireship', url: 'https://youtube.com/@Fireship' },
-  { name: 'Kurzgesagt', url: 'https://youtube.com/@kurzgesagt' },
+  { name: 'notJustDev', id: 'UCYSa_YLoJokZAwHhlwJntIA' },
+  { name: 'PewDiePie', id: 'UC-lHJZR3Gqxm24_Vd_AJ5Yw' },
 ];
+
+const fetchChannels = async () => {
+  const { data, error } = await supabase
+    .from('yt_channels')
+    .select('*')
+    .order('updated_at', { ascending: false });
+  if (error) {
+    throw error;
+  }
+  return data;
+};
 
 export default function Home() {
   const [url, setUrl] = useState('');
 
+  const {
+    data: channels,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['channels'],
+    queryFn: () => fetchChannels(),
+  });
+
   const startAnalyzing = async () => {
+    if (!url) {
+      return;
+    }
+    // check if data about this channel already exists
+    const { data: channels, error: channelsError } = await supabase
+      .from('yt_channels')
+      .select('*')
+      .eq('url', url);
+
+    if (channels && channels.length > 0) {
+      router.push(`/channel/${channels[0].id}`);
+      return;
+    }
+
     const { error, data } = await supabase.functions.invoke('trigger_collection_api', {
       body: { url },
     });
-    console.log('error: ', error);
-    console.log('data: ', data);
+
+    if (error) {
+      Alert.alert('Error', error.message);
+      return;
+    }
+
+    router.push(`/job/${data.id}`);
   };
 
   return (
@@ -60,7 +98,7 @@ export default function Home() {
               <Text className="mb-4 px-4 text-lg font-semibold">Popular Channels</Text>
               <View className="flex-row flex-wrap gap-2 px-4">
                 {POPULAR_CHANNELS.map((channel) => (
-                  <Link key={channel.url} href="/channel" asChild>
+                  <Link key={channel.id} href={`/channel/${channel.id}`} asChild>
                     <Pressable className="rounded-full bg-gray-100 px-4 py-2">
                       <Text className="text-gray-900">{channel.name}</Text>
                     </Pressable>
@@ -72,13 +110,18 @@ export default function Home() {
             <View className="mt-12">
               <Text className="mb-4 px-4 text-lg font-semibold">Recent Searches</Text>
               <View className="divide-y divide-gray-200">
-                {[1, 2, 3].map((i) => (
-                  <Link key={i} href="/channel" asChild>
-                    <Pressable className="flex-row items-center px-4 py-4">
-                      <View className="mr-3 h-10 w-10 rounded-full bg-gray-200" />
+                {(channels || []).map((channel) => (
+                  <Link key={channel.id} href={`/channel/${channel.id}`} asChild>
+                    <Pressable className="flex-row items-center gap-4 px-4 py-4">
+                      <Image
+                        source={{ uri: channel.profile_image }}
+                        className="h-10 w-10 rounded-full"
+                      />
                       <View>
-                        <Text className="font-medium">Channel Name {i}</Text>
-                        <Text className="text-sm text-gray-600">2.5M subscribers</Text>
+                        <Text className="font-medium">{channel.name}</Text>
+                        <Text className="text-sm text-gray-600">
+                          {channel.subscribers} subscribers
+                        </Text>
                       </View>
                     </Pressable>
                   </Link>
