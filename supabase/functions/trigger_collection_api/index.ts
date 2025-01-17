@@ -1,24 +1,13 @@
-// Follow this setup guide to integrate the Deno language server with your editor:
-// https://deno.land/manual/getting_started/setup_your_environment
-// This enables autocomplete, go to definition, etc.
-
-// Setup type definitions for built-in Supabase Runtime APIs
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-
-console.log("Hello from Functions!");
+import { createClient } from "jsr:@supabase/supabase-js@2";
 
 Deno.serve(async (req) => {
   const { url } = await req.json();
 
-  console.log("url: ", url);
-
-  // curl -H "Authorization: Bearer eef65601f3ad9fedadb320b67e698185a6b8a6238ba1c656c37698eda4c5f5b5"
-  //-H "Content-Type: application/json"
-  // -d '[{"url":"https://www.youtube.com/@MrBeast/about"}]'
-  // "https://api.brightdata.com/datasets/v3/trigger?dataset_id=gd_lk538t2k2p1k3oos71&include_errors=true"
-
   const response = await fetch(
-    `https://api.brightdata.com/datasets/v3/trigger?dataset_id=gd_lk538t2k2p1k3oos71&include_errors=true`,
+    `https://api.brightdata.com/datasets/v3/trigger?dataset_id=gd_lk538t2k2p1k3oos71&endpoint=${
+      Deno.env.get("SUPABASE_URL")
+    }/functions/v1/collection_webhook&format=json&uncompressed_webhook=true&include_errors=true`,
     {
       headers: {
         Authorization: `Bearer ${Deno.env.get("BRIGHT_DATA_API_KEY")}`,
@@ -40,6 +29,22 @@ Deno.serve(async (req) => {
   }
 
   const data = await response.json();
+
+  // store job data in database
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL") ?? "",
+    Deno.env.get("SUPABASE_ANON_KEY") ?? "",
+    {
+      global: { headers: { Authorization: req.headers.get("Authorization")! } },
+    },
+  );
+
+  const result = await supabase.from("scrape_jobs").insert({
+    id: data.snapshot_id,
+    status: "running",
+  });
+
+  console.log("result: ", result);
 
   return new Response(JSON.stringify(data), {
     headers: { "Content-Type": "application/json" },
