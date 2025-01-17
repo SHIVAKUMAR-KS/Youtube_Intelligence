@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { View, Text, TextInput, ScrollView, Pressable, Alert, Image } from 'react-native';
 
 import { Container } from '~/components/Container';
+import { YT_CHANNELS_DATASET_ID } from '~/constants';
 import { supabase } from '~/lib/supabase';
 
 const POPULAR_CHANNELS = [
@@ -50,7 +51,7 @@ export default function Home() {
     }
 
     const { error, data } = await supabase.functions.invoke('trigger_collection_api', {
-      body: { url },
+      body: { input: [{ url }], dataset_id: YT_CHANNELS_DATASET_ID },
     });
 
     if (error) {
