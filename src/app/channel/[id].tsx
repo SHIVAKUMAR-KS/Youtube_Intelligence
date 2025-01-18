@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link, useLocalSearchParams } from 'expo-router';
+import { Link, Stack, useLocalSearchParams } from 'expo-router';
 import { View, Text, Image, ScrollView, Alert, Pressable } from 'react-native';
 import { Button } from '~/components/Button';
 import { YT_VIDEOS_DATASET_ID } from '~/constants';
@@ -71,6 +71,7 @@ export default function Channel() {
 
   return (
     <ScrollView className="flex-1">
+      <Stack.Screen options={{ title: channel.name }} />
       {/* Banner Image */}
       <Image source={{ uri: channel.banner_img }} className="h-40 w-full object-cover" />
 

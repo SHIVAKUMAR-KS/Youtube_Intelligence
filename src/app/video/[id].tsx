@@ -1,6 +1,6 @@
-import { useLocalSearchParams } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { ScrollView, View, Text, Image } from 'react-native';
+import { ScrollView, View, Text, Image, Button } from 'react-native';
 import { supabase } from '~/lib/supabase';
 
 const fetchVideo = async (id: string) => {
@@ -27,6 +27,13 @@ export default function Video() {
     queryFn: () => fetchVideo(id),
   });
 
+  const getSummary = async () => {
+    const { data, error } = await supabase.functions.invoke('ai_video_analysis', {
+      body: { id },
+    });
+    console.log(data);
+  };
+
   if (isLoading) {
     return <Text>Loading...</Text>;
   }
@@ -35,10 +42,10 @@ export default function Video() {
     return <Text>Error: {error.message}</Text>;
   }
 
-  console.log(video);
-
   return (
     <ScrollView className="flex-1">
+      <Stack.Screen options={{ title: video.yt_channels.name }} />
+
       {/* Video Preview/Player */}
       <Image source={{ uri: video.preview_image }} className="h-56 w-full object-cover" />
 
@@ -73,7 +80,26 @@ export default function Video() {
         {/* Stats */}
         <View className="mt-6 flex-row gap-4">
           <Text className="text-gray-600">{video.likes.toLocaleString()} likes</Text>
-          {/* <Text className="text-gray-600">{video.comments_count.toLocaleString()} comments</Text> */}
+        </View>
+
+        {/* AI Analysis Section */}
+        <View className="mt-6 rounded-lg bg-gray-50 p-4">
+          <Text className="mb-3 text-lg font-semibold">AI Summary</Text>
+          <Text className="leading-relaxed text-gray-800">{video.ai_summary}</Text>
+
+          {/* Key Topics */}
+          <View className="mt-4">
+            <Text className="mb-2 text-lg font-semibold">Key Topics</Text>
+            <View className="flex-row flex-wrap gap-2">
+              {video.ai_topics?.map((topic: string) => (
+                <View key={topic} className="rounded-full bg-blue-100 px-3 py-1">
+                  <Text className="text-blue-800">{topic}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <Button title="Generate AI Analysis" onPress={getSummary} className="mt-4" />
         </View>
       </View>
     </ScrollView>
